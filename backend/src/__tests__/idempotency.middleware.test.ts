@@ -5,6 +5,7 @@
  */
 
 import { BadRequestException } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { IdempotencyMiddleware, IDEMPOTENCY_VERSION } from '../common/middleware/idempotency.middleware';
 import * as cache from '../redis/cache';
 
@@ -26,13 +27,13 @@ interface FakeRes {
   json(body: unknown): FakeRes;
 }
 
-function makeReq(overrides: Partial<FakeReq> = {}): FakeReq {
+function makeReq(overrides: Partial<FakeReq> = {}): Request {
   return {
     method: 'POST',
     path: '/ipfs/upload',
     headers: {},
     ...overrides,
-  };
+  } as unknown as Request;
 }
 
 function makeRes(): FakeRes {
@@ -47,6 +48,9 @@ function makeRes(): FakeRes {
   res.json = res.json.bind(res);
   return res;
 }
+
+/** Cast a FakeRes to express Response for passing to middleware.use() */
+function asRes(r: FakeRes): Response { return r as unknown as Response; }
 
 const VALID_KEY = '550e8400-e29b-41d4-a716-446655440000';
 
@@ -69,20 +73,20 @@ describe('IdempotencyMiddleware', () => {
     const req = makeReq();
     const res = makeRes();
     const next = jest.fn();
-    await middleware.use(req, res, next);
+    await middleware.use(req, asRes(res), next);
     expect(next).toHaveBeenCalled();
     expect(getEntry).not.toHaveBeenCalled();
   });
 
   test('rejects malformed key (not UUID v4) with 400', async () => {
     const req = makeReq({ headers: { 'idempotency-key': 'not-a-uuid' } });
-    await expect(middleware.use(req, makeRes(), jest.fn())).rejects.toBeInstanceOf(BadRequestException);
+    await expect(middleware.use(req, asRes(makeRes()), jest.fn())).rejects.toBeInstanceOf(BadRequestException);
   });
 
   test('rejects key with wrong UUID version (v1)', async () => {
     const v1Key = '550e8400-e29b-11d4-a716-446655440000'; // version digit = 1
     const req = makeReq({ headers: { 'idempotency-key': v1Key } });
-    await expect(middleware.use(req, makeRes(), jest.fn())).rejects.toBeInstanceOf(BadRequestException);
+    await expect(middleware.use(req, asRes(makeRes()), jest.fn())).rejects.toBeInstanceOf(BadRequestException);
   });
 
   test('cache miss: calls next and stores response on json()', async () => {
@@ -90,7 +94,7 @@ describe('IdempotencyMiddleware', () => {
     const res = makeRes();
     const next = jest.fn();
 
-    await middleware.use(req, res, next);
+    await middleware.use(req, asRes(res), next);
     expect(next).toHaveBeenCalled();
 
     // Simulate handler writing a response
@@ -111,7 +115,7 @@ describe('IdempotencyMiddleware', () => {
     const res = makeRes();
     const next = jest.fn();
 
-    await middleware.use(req, res, next);
+    await middleware.use(req, asRes(res), next);
 
     expect(next).not.toHaveBeenCalled();
     expect(res._body).toEqual({ cid: 'Qm123' });
@@ -122,7 +126,7 @@ describe('IdempotencyMiddleware', () => {
     // First call — cache miss
     const req1 = makeReq({ headers: { 'idempotency-key': VALID_KEY } });
     const res1 = makeRes();
-    await middleware.use(req1, res1, jest.fn());
+    await middleware.use(req1, asRes(res1), jest.fn());
     res1.json({ cid: 'QmABC' });
     await new Promise(resolve => setImmediate(resolve));
 
@@ -134,7 +138,7 @@ describe('IdempotencyMiddleware', () => {
     const req2 = makeReq({ headers: { 'idempotency-key': VALID_KEY } });
     const res2 = makeRes();
     const next2 = jest.fn();
-    await middleware.use(req2, res2, next2);
+    await middleware.use(req2, asRes(res2), next2);
 
     expect(next2).not.toHaveBeenCalled();
     expect(res2._body).toEqual({ cid: 'QmABC' });
@@ -144,7 +148,7 @@ describe('IdempotencyMiddleware', () => {
     const req = makeReq({ headers: { 'idempotency-key': VALID_KEY } });
     const res = makeRes();
     res.statusCode = 503;
-    await middleware.use(req, res, jest.fn());
+    await middleware.use(req, asRes(res), jest.fn());
     res.json({ error: 'service_unavailable' });
     await new Promise(resolve => setImmediate(resolve));
     expect(setEntry).not.toHaveBeenCalled();
@@ -154,7 +158,7 @@ describe('IdempotencyMiddleware', () => {
     const req = makeReq({ headers: { 'idempotency-key': VALID_KEY } });
     const res = makeRes();
     res.statusCode = 400;
-    await middleware.use(req, res, jest.fn());
+    await middleware.use(req, asRes(res), jest.fn());
     res.json({ error: 'invalid_file' });
     await new Promise(resolve => setImmediate(resolve));
     expect(setEntry).toHaveBeenCalledWith(
@@ -170,12 +174,12 @@ describe('IdempotencyMiddleware', () => {
 
     const req1 = makeReq({ headers: { 'idempotency-key': VALID_KEY }, user: { sub: 'userA' } });
     const res1 = makeRes();
-    await middleware.use(req1, res1, jest.fn());
+    await middleware.use(req1, asRes(res1), jest.fn());
     res1.json({ ok: true });
 
     const req2 = makeReq({ headers: { 'idempotency-key': VALID_KEY }, user: { sub: 'userB' } });
     const res2 = makeRes();
-    await middleware.use(req2, res2, jest.fn());
+    await middleware.use(req2, asRes(res2), jest.fn());
     res2.json({ ok: true });
 
     await new Promise(resolve => setImmediate(resolve));
@@ -187,7 +191,7 @@ describe('IdempotencyMiddleware', () => {
     const req = makeReq({ headers: { 'idempotency-key': VALID_KEY } });
     const next = jest.fn();
     // Should not throw — fail open
-    await expect(middleware.use(req, makeRes(), next)).resolves.toBeUndefined();
+    await expect(middleware.use(req, asRes(makeRes()), next)).resolves.toBeUndefined();
     expect(next).toHaveBeenCalled();
   });
 
@@ -197,7 +201,7 @@ describe('IdempotencyMiddleware', () => {
 
     const req = makeReq({ headers: { 'idempotency-key': VALID_KEY } });
     const next = jest.fn();
-    await middleware.use(req, makeRes(), next);
+    await middleware.use(req, asRes(makeRes()), next);
     expect(next).toHaveBeenCalled();
   });
 
@@ -205,7 +209,7 @@ describe('IdempotencyMiddleware', () => {
     // First call - cache miss, stores entry
     const req1 = makeReq({ headers: { 'idempotency-key': VALID_KEY } });
     const res1 = makeRes();
-    await middleware.use(req1, res1, jest.fn());
+    await middleware.use(req1, asRes(res1), jest.fn());
     res1.json({ id: 'claim-1' });
     await new Promise(resolve => setImmediate(resolve));
     expect(setEntry).toHaveBeenCalledTimes(1);
@@ -215,7 +219,7 @@ describe('IdempotencyMiddleware', () => {
     const req2 = makeReq({ headers: { 'idempotency-key': VALID_KEY } });
     const res2 = makeRes();
     const next2 = jest.fn();
-    await middleware.use(req2, res2, next2);
+    await middleware.use(req2, asRes(res2), next2);
 
     // After expiry, request is processed fresh
     expect(next2).toHaveBeenCalled();

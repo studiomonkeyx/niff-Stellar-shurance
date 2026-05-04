@@ -27,6 +27,7 @@ import {
   POLICY_DURATION_LEDGERS,
 } from './renewal.constants';
 import type { PolicyRenewedEvent } from './dto/renewal.dto';
+import { RenewalService, renewalBus } from './renewal.service';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

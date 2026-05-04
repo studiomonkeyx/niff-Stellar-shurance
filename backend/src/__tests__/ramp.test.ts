@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { RawBodyRequest } from '@nestjs/common';
 import { createHmac } from 'crypto';
+import type { Request } from 'express';
 import { RampController } from '../ramp/ramp.controller';
 import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
 import { Reflector } from '@nestjs/core';
@@ -27,8 +29,8 @@ function signPayload(body: string, secret = WEBHOOK_SECRET): string {
   return createHmac('sha256', secret).update(Buffer.from(body)).digest('hex');
 }
 
-function makeRawReq(body: string) {
-  return { rawBody: Buffer.from(body) } as { rawBody: Buffer };
+function makeRawReq(body: string, _sig?: string) {
+  return { rawBody: Buffer.from(body) } as unknown as RawBodyRequest<Request>;
 }
 
 const mockFlags = (enabled: boolean) => ({

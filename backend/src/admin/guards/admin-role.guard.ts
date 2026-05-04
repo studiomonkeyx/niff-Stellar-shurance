@@ -47,7 +47,7 @@ export class AdminRoleGuard implements CanActivate {
       }
 
       // Attach identity to request for downstream use
-      request.adminIdentity = identity;
+      (request as Request & { adminIdentity: typeof identity }).adminIdentity = identity;
       
       this.logger.debug(`Admin access granted to ${identity.staffId} from IP: ${ip}`);
       return true;
