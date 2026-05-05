@@ -94,14 +94,14 @@ pub fn set_governance_token_address(_env: &Env, _token: &Address) {}
 
 #[cfg(test)]
 mod tests {
+    #[allow(unused_imports)]
     use super::*;
-
-    /// Default / MVP builds: feature off → always disabled (no governance storage read).
-    #[cfg(not(feature = "governance-token"))]
     #[test]
     fn default_build_governance_token_inert() {
         let env = Env::default();
-        assert!(!governance_token_effective_enabled(&env));
+        let contract_id = env.register(crate::NiffyInsure, ());
+        let result = env.as_contract(&contract_id, || governance_token_effective_enabled(&env));
+        assert!(!result);
     }
 
     /// `set_governance_token_runtime_enabled` must not persist when the feature is off,
