@@ -4,7 +4,7 @@ VERSION    := $(shell cargo metadata --no-deps --format-version 1 | python -c "i
 GIT_TAG    := $(shell git describe --tags --exact-match 2>/dev/null || echo "dev")
 ARTIFACT   := artifacts/niffyinsure-$(VERSION)-$(GIT_TAG).wasm
 
-.PHONY: build test fmt lint sha clean wasm-release wasm-opt-check check-env
+.PHONY: build test fmt lint sha clean wasm-release wasm-opt-check check-env audit
 
 build:
 	cargo build --target wasm32-unknown-unknown --release
@@ -17,6 +17,12 @@ fmt:
 
 lint:
 	cargo clippy --target wasm32-unknown-unknown --release -- -D warnings
+
+audit:
+	cargo audit --deny warnings \
+		--ignore RUSTSEC-2024-0388 \
+		--ignore RUSTSEC-2024-0436 \
+		--ignore RUSTSEC-2026-0097
 
 sha: build
 	sha256sum $(WASM_RAW)

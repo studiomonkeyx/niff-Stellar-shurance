@@ -1,14 +1,18 @@
-# cargo audit configuration
+# cargo audit ignore list
+#
+# NOTE: `cargo audit` does NOT support a --config flag or auto-reading this file.
+# The ignore list must be passed as --ignore flags on the command line.
+#
+# Correct invocation:
+#   cargo audit --deny warnings \
+#     --ignore RUSTSEC-2024-0388 \
+#     --ignore RUSTSEC-2024-0436 \
+#     --ignore RUSTSEC-2026-0097
+#
 # These advisories are in transitive dependencies of soroban-sdk 25.x and cannot
 # be resolved by this project directly. They will be fixed upstream when soroban-sdk
 # updates its dependency tree.
-
-[advisories]
-ignore = [
-    # derivative 2.2.0 — unmaintained; pulled in by ark-ec/ark-ff via soroban-env-host
-    "RUSTSEC-2024-0388",
-    # paste 1.0.15 — unmaintained; pulled in by wasmi_core/ark-ff via soroban-env-host
-    "RUSTSEC-2024-0436",
-    # rand 0.8.5 — unsound with custom logger; pulled in by soroban-sdk/soroban-env-host
-    "RUSTSEC-2026-0097",
-]
+#
+# RUSTSEC-2024-0388 — derivative 2.2.0: unmaintained; pulled in by ark-ec/ark-ff via soroban-env-host
+# RUSTSEC-2024-0436 — paste 1.0.15: unmaintained; pulled in by wasmi_core/ark-ff via soroban-env-host
+# RUSTSEC-2026-0097 — rand 0.8.5: unsound with custom logger; pulled in by soroban-sdk/soroban-env-host
