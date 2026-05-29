@@ -9,10 +9,28 @@ import { ReconciliationService } from './reconciliation.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { RpcModule } from '../rpc/rpc.module';
 import { EventsModule } from '../events/events.module';
+import { CacheModule } from '../cache/cache.module';
+import { MetricsModule } from '../metrics/metrics.module';
+import { ClaimSummaryCacheService } from '../claims/services/claim-summary-cache.service';
 
 @Module({
-  imports: [PrismaModule, RpcModule, ConfigModule, ScheduleModule.forRoot(), EventsModule],
-  providers: [IndexerService, IndexerWorker, ReindexWorkerService, BackfillWorkerService, ReconciliationService],
+  imports: [
+    PrismaModule,
+    RpcModule,
+    ConfigModule,
+    ScheduleModule.forRoot(),
+    EventsModule,
+    CacheModule,
+    MetricsModule,
+  ],
+  providers: [
+    IndexerService,
+    IndexerWorker,
+    ReindexWorkerService,
+    BackfillWorkerService,
+    ReconciliationService,
+    ClaimSummaryCacheService,
+  ],
   exports: [IndexerService, ReconciliationService],
 })
 export class IndexerModule {}
