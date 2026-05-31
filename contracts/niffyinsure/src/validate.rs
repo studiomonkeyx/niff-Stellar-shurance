@@ -55,6 +55,8 @@ pub enum Error {
     RateLimitExceeded = 42,
     /// Evidence URL does not match IPFS or allowlisted gateway format.
     InvalidEvidenceUrl = 43,
+    /// Contract payout recipients must be allowlisted.
+    PayoutRecipientContractNotAllowlisted = 48,
     /// Admin `set_voting_duration_ledgers` value outside allowed [min, max] range.
     VotingDurationOutOfBounds = 49,
     /// Batch get exceeded POLICY_BATCH_GET_MAX.
@@ -71,10 +73,16 @@ pub enum Error {
     RollingClaimCapExceeded = 54,
     /// Keeper `process_payout_timeout` called before the approved payout deadline elapsed.
     PayoutDeadlineNotReached = 55,
-    /// Evidence count is below the admin-configured minimum.
-    InsufficientEvidence = 56,
-    /// Claim filed within the per-policy cooldown window after last resolution.
-    CooldownActive = 57,
+    /// Claim amount is below the asset-specific minimum (issue #587).
+    ClaimBelowMinAmount = 56,
+    /// Claim amount exceeds the asset-specific maximum (issue #587).
+    ClaimAboveMaxAmount = 57,
+    /// Delegation not found or expired (issue #585).
+    DelegationInvalid = 58,
+    /// Operator lacks the required permission for this action (issue #585).
+    DelegationPermissionDenied = 59,
+    /// Primary treasury insufficient and no reinsurance configured (issue #581).
+    NoReinsuranceConfigured = 60,
 }
 
 pub fn validate_quorum_bps(bps: u32) -> Result<(), Error> {
@@ -518,3 +526,11 @@ mod evidence_url_validation_tests {
         });
     }
 }
+    /// Claim evidence update must happen before any votes are cast.
+    ClaimEvidenceUpdateNotAllowed = 44,
+    /// Evidence count must fit the configured min/max bounds.
+    EvidenceCountOutOfBounds = 45,
+    /// Treasury deposits must be strictly positive.
+    ZeroTreasuryDeposit = 46,
+    /// Caller is not on the authorized treasury depositor allowlist.
+    UnauthorizedTreasuryDepositor = 47,
