@@ -4,6 +4,7 @@ import { ClaimsService } from './claims.service';
 import { SanitizationService } from './sanitization.service';
 import { ClaimViewMapper } from './claim-view.mapper';
 import { ClaimAggregationService } from './services/claim-aggregation.service';
+import { ClaimSummaryCacheService } from './services/claim-summary-cache.service';
 import { EvidenceUploadService } from './services/evidence-upload.service';
 import { EvidenceProxyService } from './services/evidence-proxy.service';
 import { ClaimDeadlineProcessorService } from './claim-deadline.processor.service';
@@ -26,12 +27,19 @@ import { AdminModule } from '../admin/admin.module';
     SanitizationService,
     ClaimViewMapper,
     ClaimAggregationService,
+    ClaimSummaryCacheService,
     EvidenceUploadService,
     EvidenceProxyService,
     ClaimDeadlineProcessorService,
     ClaimDeadlineBootstrap,
     ClaimHistoryService,
   ],
-  exports: [ClaimsService, ClaimViewMapper, ClaimAggregationService, ClaimDeadlineProcessorService],
+  exports: [
+    ClaimsService,
+    ClaimViewMapper,
+    ClaimAggregationService,
+    ClaimSummaryCacheService,
+    ClaimDeadlineProcessorService,
+  ],
 })
 export class ClaimsModule {}
