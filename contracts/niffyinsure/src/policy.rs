@@ -819,3 +819,43 @@ fn coverage_tier_rank(tier: &CoverageType) -> u32 {
         CoverageType::Premium => 2,
     }
 }
+
+/// Transfer policy ownership to a new holder.
+///
+/// - Authenticated by the current holder.
+/// - Reverts if `new_holder` equals the current holder or if any claim is open.
+pub fn transfer_policy(
+    env: &Env,
+    holder: &Address,
+    policy_id: u32,
+    new_holder: &Address,
+) -> Result<(), Error> {
+    holder.require_auth();
+
+    if holder == new_holder {
+        return Err(Error::PolicyTransferInvalid);
+    }
+
+    let mut policy =
+        storage::get_policy(env, holder, policy_id).ok_or(Error::PolicyNotFound)?;
+
+    if !policy.is_active {
+        return Err(Error::PolicyInactive);
+    }
+
+    // Block transfer while an open claim exists for this policy
+    if storage::get_open_claim_count(env, holder, policy_id) > 0 {
+        return Err(Error::PolicyTransferInvalid);
+    }
+
+    // Move storage: write under new holder key, remove old key
+    policy.holder = new_holder.clone();
+    storage::set_policy(env, new_holder, policy_id, &policy);
+    env.storage()
+        .persistent()
+        .remove(&storage::DataKey::Policy(holder.clone(), policy_id));
+
+    events::emit_policy_transferred(env, policy_id, holder, new_holder);
+
+    Ok(())
+}
