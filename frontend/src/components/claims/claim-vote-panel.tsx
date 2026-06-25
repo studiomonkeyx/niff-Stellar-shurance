@@ -33,6 +33,7 @@ import { trackVoteCast } from '@/lib/analytics'
 
 import { AppealButton } from './AppealButton'
 import { AppealConfirmModal } from './AppealConfirmModal'
+import { EvidenceGallery } from './EvidenceGallery'
 import { VoteConfirmModal } from './vote-confirm-modal'
 import { VoteEducationPanel } from './vote-education-panel'
 import { VoteTally } from './vote-tally'
@@ -306,6 +307,18 @@ export function ClaimVotePanel({ claimId }: ClaimVotePanelProps) {
 
       {/* Live tally */}
       <VoteTally claim={claim} currentLedger={currentLedger} />
+
+      {/* Evidence gallery with on-chain SHA-256 commitment hashes */}
+      {claim.evidence && claim.evidence.length > 0 && (
+        <section aria-label="Evidence">
+          <h2 className="text-base font-semibold mb-3">Evidence</h2>
+          <EvidenceGallery
+            claimId={Number(claim.claim_id)}
+            count={claim.evidence.length}
+            hashes={claim.evidence.map((e) => e.hash)}
+          />
+        </section>
+      )}
 
       {/* Prior vote badge */}
       {alreadyVoted && (
